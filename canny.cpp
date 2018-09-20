@@ -31,8 +31,6 @@ int recursiveDT(int **mag, int **peaks, int **final, int i, int j)
 		{
 			if (mag[i+p][j+q] >= lo && mag[i+p][j+q] < hi)
 			{
-					cout << "WE ARE NOW EXITING :LSINVPOWNIBO" << endl;
-
 				final[i+p][j+q] = 255;
 				if (recursiveDT(mag, peaks, final, i + p, j + q))
 					return 0;
@@ -80,7 +78,7 @@ int main(int argc, char **argv)
 	img3 << type << endl << width << " " << height << endl << intensity << endl;
 
 	// These matrices will hold the integer values of the input image and masks
-	// dynamically allocating arrays to be able to pass them into functions
+	// dynamically allocating arrays to easily pass them into functions
 	double **pic = new double*[height], **mag = new double*[height];
 	double **peaks = new double*[height], **final = new double*[height];
 	double **x = new double*[height], **y = new double*[height];
@@ -183,6 +181,8 @@ int main(int argc, char **argv)
 			mag[i][j] = mag[i][j] / maxVal * 255;
 
 	// Outputting the 'mag' matrix to img1. It's very important to cast it to a char.
+	// Also to make sure that the decimal doesn't produce any wonky results, cast to
+	// an int first
 	for (int i = 0; i < height; i++)
 		for (int j = 0; j < width; j++)
 			img1 << (char)((int)mag[i][j]);
@@ -226,7 +226,7 @@ int main(int argc, char **argv)
 	// Outputting the 'peaks' matrix to img2
 	for (int i = 0; i < height; i++)
 		for (int j = 0; j < width; j++)
-			img2 << (char)peaks[i][j];
+			img2 << (char)((int)peaks[i][j]);
 
 	// ======================== Hysteresis & Double Thresholding ========================
 	// To get rid of all the garbage 'snow' in the peaks image, we'll first look at
@@ -285,7 +285,7 @@ int main(int argc, char **argv)
 	// Output the 'final' matrix to img1
 	for (int i = 0; i < height; i++)
 		for (int j = 0; j < width; j++)
-			img3 << (char)final[i][j];		
+			img3 << (char)((int)final[i][j]);		
 
 	return 0;
 }
