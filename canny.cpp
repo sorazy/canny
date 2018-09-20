@@ -60,10 +60,13 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
+	// Extract the input file name to name the output files accordingly
+	
+
 	// Output files
-	ofstream img1("cannypoppop.pgm", ios::binary);
-	ofstream img2("cannyfuji.pgm", ios::binary);		
-	ofstream img3("cannyawesome.pgm", ios::binary);
+	ofstream img1("./output_images/canny_mag.pgm", ios::binary);
+	ofstream img2("./output_images/canny_peaks.pgm", ios::binary);		
+	ofstream img3("./output_images/canny_final.pgm", ios::binary);
 
 	::hi = stoi(argv[2]);
 	::lo = .35 * hi;
@@ -76,23 +79,19 @@ int main(int argc, char **argv)
 	img2 << type << endl << width << " " << height << endl << intensity << endl;
 	img3 << type << endl << width << " " << height << endl << intensity << endl;
 
-	cout << "Type is: " << type << endl;
-	cout << "Height: " << height << " Width: " << width << endl;
-	cout << "Intensity: " << intensity << endl;
-
 	// These matrices will hold the integer values of the input image and masks
-	// Dynamically allocating arrays to be able to pass them into functions
-	int **pic = new int*[height], **mag = new int*[height];
-	int **peaks = new int*[height], **final = new int*[height];
+	// dynamically allocating arrays to be able to pass them into functions
+	double **pic = new double*[height], **mag = new double*[height];
+	double **peaks = new double*[height], **final = new double*[height];
 	double **x = new double*[height], **y = new double*[height];
 	double **maskx = new double*[dim], **masky = new double*[dim];
 
 	for (int i = 0; i < height; i++)
 	{
-		pic[i] = new int[width];
-		mag[i] = new int[width];
-		peaks[i] = new int[width];
-		final[i] = new int[width];
+		pic[i] = new double[width];
+		mag[i] = new double[width];
+		peaks[i] = new double[width];
+		final[i] = new double[width];
 		x[i] = new double[width];
 		y[i] = new double[width];
 	}
@@ -103,7 +102,7 @@ int main(int argc, char **argv)
 		masky[i] = new double[dim];
 	}
 
-	// Reading in the input image
+	// Reading in the input image as integers
 	for (int i = 0; i < height; i++)
 		for (int j = 0; j < width; j++)
 			pic[i][j] = (int)infile.get();
@@ -120,7 +119,7 @@ int main(int argc, char **argv)
 
 	// ================================= Magnitude Image ================================
 	// Preform a scanning convolution on the input picture
-	int sumx, sumy;
+	double sumx, sumy, maxx = 0, maxy = 0;
 	for (int i = 0; i < height; i++)
 	{ 
 		for (int j = 0; j < width; j++)
@@ -141,13 +140,28 @@ int main(int argc, char **argv)
 				}
 			}
 			
-			// Store convultion result in respective matrix
+			if (sumx > maxx)
+				maxx = sumx;
+			if (sumy > maxy)
+				maxy = sumy;
+
+			// Store convolution result in respective matrix
 			x[i][j] = sumx;
 			y[i][j] = sumy;
 		}
 	}
 
-	// Find gradient and maxval, then store it in the 'mag' matrix
+	// Make sure all the convolution values are between 0-255
+	for (int i = 0; i < height; i++)
+	{
+		for (int j = 0; j < width; j++)
+		{
+			x[i][j] = x[i][j] / maxx * 255;
+			y[i][j] = y[i][j] / maxy * 255;
+		}		
+	}
+
+	// Find magnitude and maxval, then store it in the 'mag' matrix
 	double mags;
 	double maxVal = 0;
 	for (int i = 0; i < height; i++)
@@ -171,48 +185,54 @@ int main(int argc, char **argv)
 	// Outputting the 'mag' matrix to img1. It's very important to cast it to a char.
 	for (int i = 0; i < height; i++)
 		for (int j = 0; j < width; j++)
-			img1 << (char)mag[i][j];
+			img1 << (char)((int)mag[i][j]);
 
 	// ================================ Peaks Detection ================================
 	double slope = 0;
 	for (int i = 1; i < height - 1; i++)
 	{
-		// To avoid dividing by zero
 		for (int j = 1; j < width - 1; j++)
 		{
+			// To avoid dividing by zero
 			if (x[i][j] == 0)
-				x[i][j] = 0.00001;
+				x[i][j] = 0.0001;
 
 			slope = y[i][j] / x[i][j];
 
 			// We're only looking for the peaks. If we're at a peak, store 255 in 'peaks'
 			if (slope <= tan(22.5) && slope > tan(-22.5))
+			{
 				if (mag[i][j] > mag[i][j-1] && mag[i][j] > mag[i][j+1])
 					peaks[i][j] = 255;
-
+			}
 			else if (slope <= tan(67.5) && slope > tan(22.5))
+			{
 				if (mag[i][j] > mag[i-1][j-1] && mag[i][j] > mag[i+1][j+1])
 					peaks[i][j] = 255;
-
+			}
 			else if (slope <= tan(-22.5) && slope > tan(-67.5))
+			{
 				if (mag[i][j] > mag[i+1][j-1] && mag[i][j] > mag[i-1][j+1])
 					peaks[i][j] = 255;
-
+			}
 			else
+			{
 				if (mag[i][j] > mag[i-1][j] && mag[i][j] > mag[i+1][j])
 					peaks[i][j] = 255;
+			}
 		}
 	}
 
-	// Outputting the 'peaks' matrix to img1
+	// Outputting the 'peaks' matrix to img2
 	for (int i = 0; i < height; i++)
 		for (int j = 0; j < width; j++)
 			img2 << (char)peaks[i][j];
 
 	// ======================== Hysteresis & Double Thresholding ========================
-	// To get rid of all the garbage in the peaks image, we'll first look at
-	// the peaks matrix. If it's a 255 then look back at the 'mag' matrix.
-	// If mag is hi, then automatically store in the final. If lo, then reject.
+	// To get rid of all the garbage 'snow' in the peaks image, we'll first look at
+	// the peaks matrix. If it's a 255 then look back at the 'mag' matrix. If mag is hi,
+	// then automatically store in the final. If lo, then reject. We'll deal with the
+	// middle values after this
 	for (int i = 0; i < height; i++)
 	{
 		for (int j = 0; j < width; j++)

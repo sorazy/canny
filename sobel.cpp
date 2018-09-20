@@ -28,9 +28,9 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	ofstream img_mag("output_mag.pgm", ios::binary);
-	ofstream img_hi("output_hi.pgm", ios::binary);
-	ofstream img_lo("output_lo.pgm", ios::binary);
+	ofstream img_mag("./output_images/sobel_mag.pgm", ios::binary);
+	ofstream img_hi("./output_images/sobel_hi.pgm", ios::binary);
+	ofstream img_lo("./output_images/sobel_lo.pgm", ios::binary);
 
 	char buffer[1024];
 	int width, height, intensity, hi = stoi(argv[2]), lo = stoi(argv[3]);
@@ -43,7 +43,7 @@ int main(int argc, char **argv)
 	img_lo << buffer << endl << width << " " << height << endl << intensity << endl;
 
 	// These matrices will hold the integer values of the input image
-	int pic[height][width], x[height][width], y[height][width], mag[height][width];
+	double pic[height][width], x[height][width], y[height][width], mag[height][width];
 
 	// Reading in the input image
 	for (int i = 0; i < height; i++)
@@ -54,6 +54,7 @@ int main(int argc, char **argv)
 	// This does the scanning convultion of the masks declared above, and stores
 	// the values in the matrices outputx and outputy
 	int mr = 1;
+	int maxx = 0, maxy = 0;
 	for (int i = 0; i < height; i++)
 	{
 		for (int j = 0; j < width; j++)
@@ -69,13 +70,28 @@ int main(int argc, char **argv)
 					if ((i + p) < 0 || (j + q) < 0 || (i + p) >= height || (j + q) >= width)
 						continue;
 
-					sumx += pic[i + p][j + q] * maskx[p + mr][q + mr];
-					sumy += pic[i + p][j + q] * masky[p + mr][q + mr];
+					sumx += pic[i+p][j+q] * maskx[p+mr][q+mr];
+					sumy += pic[i+p][j+q] * masky[p+mr][q+mr];
 				}
 			}
 
+			if (sumx > maxx)
+				maxx = sumx;
+			if (sumy > maxy)
+				maxy = sumy;
+
 			x[i][j] = sumx;
 			y[i][j] = sumy;
+		}
+	}
+
+	// Make sure all the values are between 0-255
+	for (int i = 0; i < height; i++)
+	{
+		for (int j = 0; j < width; j++)
+		{
+			x[i][j] = x[i][j] / maxx * 255;
+			y[i][j] = y[i][j] / maxy * 255;
 		}
 	}
 
@@ -88,26 +104,33 @@ int main(int argc, char **argv)
 			mag[i][j] = sqrt((x[i][j] * x[i][j]) + (y[i][j] * y[i][j]));
 
 			if (mag[i][j] > maxVal)
-				maxVal = pic[i][j];
+				maxVal = mag[i][j];
 		}
 	}
 
+	// Make sure all the magnitude values are between 0-255
+	for (int i = 0; i < height; i++)
+		for (int j = 0; j < width; j++)
+			mag[i][j] = mag[i][j] / maxVal * 255;
+
+	// Make sure to cast back to char before outputting
+	// Also to avoid any wonky results, get rid of any decimals by casting to int first
 	for (int i = 0; i < height; i++)
 	{
 		for (int j = 0; j < width; j++)
 		{
 			// Output the magniture image
-			img_mag << (char)mag[i][j];
+			img_mag << (char)((int)mag[i][j]);
 
 			// Ouput the low threshold
 			if (mag[i][j] > lo)
-				img_lo << (char)255;
+				img_lo << (char)((int)mag[i][j]);
 			else
 				img_lo << (char)0;
 
 			// Ouput the low threshold
 			if (mag[i][j] > hi)
-				img_hi << (char)255;
+				img_hi << (char)((int)mag[i][j]);
 			else
 				img_hi << (char)0;
 		}
