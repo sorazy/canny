@@ -2,7 +2,7 @@
 #define CANNY_HPP
 
 #include "HashMap.hpp"
-#include <fstream>
+#include "global.hpp"
 
 void magnitude_matrix(double **pic, double **mag, double **x, double **y);
 

@@ -1,7 +1,11 @@
 #ifndef GLOBAL_VARS
 #define GLOBAL_VARS
 
+#include <cmath>
+#include <fstream>
 #include <iostream>
+#include <string.h>
+#include <vector>
 
 // Global type, height, width, intensity, hi, lo, and sig variables
 extern char type[10];

@@ -1,9 +1,6 @@
 #ifndef HASHMAP_HPP
 #define HASHMAP_HPP
 
-#include <cmath>
-#include <vector>
-
 // Point class that will be used in the HashMap
 class Point
 {

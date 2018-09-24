@@ -5,7 +5,6 @@
 // ========================================================
 
 #include "canny.hpp"
-#include <fstream>
 #include "global.hpp"
 #include "HashMap.hpp"
 
@@ -29,10 +28,12 @@ int main(int argc, char **argv)
 	}
 
 	// Exit program if file doesn't open
-	ifstream infile(argv[1], ios::binary);
+	string filename(argv[1]);
+	string path = "./input_images/" + filename;
+	ifstream infile(path, ios::binary);
 	if (!infile.is_open())
 	{
-		cout << "File " << argv[1] << " not found in directory." << endl;
+		cout << "File " << path << " not found in directory." << endl;
 		return 0;
 	}	
 
