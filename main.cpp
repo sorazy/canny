@@ -4,13 +4,13 @@
 // ASSIGNMENT #1.2: C A N N Y   E D G E   D E T E C T I O N
 // ========================================================
 
-#include <cmath>
+#include "canny.hpp"
 #include <fstream>
-#include <iostream>
+#include "global.hpp"
+#include "HashMap.hpp"
 
 using namespace std;
 
-// Global type, height, width, intensity, hi, lo, and sig variables
 char type[10];
 int height;
 int width;
@@ -19,33 +19,9 @@ int hi;
 int lo;
 double sig;
 
-// An attempt to solve the canny thresholding using recursion
-int recursiveDT(double **mag, double **final, int i, int j)
-{
-	if (mag[i][j] < lo || i < 0 || j < 0 || i >= height || j >= height)
-		return 0;
-
-	for (int p = -1; p <= 1; p++)
-	{
-		for (int q = -1; q <= 1; q++)
-		{
-			cout << "hello" << endl;
-			if (mag[i+p][j+q] >= lo && mag[i+p][j+q] < hi && q != 0 && p != 0)
-			{
-				cout << "i is: " << i << " and j is: " << j << endl;
-				final[i+p][j+q] = 255;
-				if (recursiveDT(mag, final, i + p, j + q))
-					return 0;
-			}
-		}
-	}
-
-	return 0;
-}
-
 int main(int argc, char **argv)
 {
-	// Exit program if proper arguments are not given by user
+	// Exit program if proper arguments are not provided by user
 	if (argc != 4)
 	{
 		cout << "Proper syntax: ./a.out <input_filename> <high_threshold> <sigma_value>" << endl;
@@ -60,7 +36,7 @@ int main(int argc, char **argv)
 		return 0;
 	}	
 
-	// Output files
+	// Opening output files
 	ofstream img1("./output_images/canny_mag.pgm", ios::binary);
 	ofstream img2("./output_images/canny_peaks.pgm", ios::binary);		
 	ofstream img3("./output_images/canny_final.pgm", ios::binary);
@@ -68,7 +44,6 @@ int main(int argc, char **argv)
 	::hi = stoi(argv[2]);
 	::lo = .35 * hi;
 	::sig = stoi(argv[3]);
-	int dim = 6 * sig + 1, cent = dim / 2;
 
 	// Storing header information and copying into the new ouput images
 	infile >> ::type >> ::width >> ::height >> ::intensity;
@@ -78,25 +53,16 @@ int main(int argc, char **argv)
 
 	// These matrices will hold the integer values of the input image and masks.
 	// I'm dynamically allocating arrays to easily pass them into functions.
-	double **pic = new double*[height], **mag = new double*[height];
-	double **peaks = new double*[height], **final = new double*[height];
+	double **pic = new double*[height], **mag = new double*[height], **final = new double*[height];
 	double **x = new double*[height], **y = new double*[height];
-	double **maskx = new double*[dim], **masky = new double*[dim];
 
 	for (int i = 0; i < height; i++)
 	{
 		pic[i] = new double[width];
 		mag[i] = new double[width];
-		peaks[i] = new double[width];
 		final[i] = new double[width];
 		x[i] = new double[width];
 		y[i] = new double[width];
-	}
-
-	for (int i = 0; i < dim; i++)
-	{
-		maskx[i] = new double[dim];
-		masky[i] = new double[dim];
 	}
 
 	// Reading in the input image as integers
@@ -104,179 +70,49 @@ int main(int argc, char **argv)
 		for (int j = 0; j < width; j++)
 			pic[i][j] = (int)infile.get();
 
-	// Use the Gausian 1st derivative formula to fill in the mask values
-	for (int p = -cent; p <= cent; p++)
-	{	
-		for (int q = -cent; q <= cent; q++)
-		{
-			maskx[p+cent][q+cent] = q * exp(-1 * ((p * p + q * q) / (2 * sig * sig)));
-			masky[p+cent][q+cent] = p * exp(-1 * ((p * p + q * q) / (2 * sig * sig)));
-		}
-	}
+	// Create the magniute matrix
+	magnitude_matrix(pic, mag, x, y);
 
-	// ================================= Magnitude Image ================================
-	// Preform a scanning convolution on the input picture
-	double sumx, sumy, maxx = 0, maxy = 0;
-	for (int i = 0; i < height; i++)
-	{ 
-		for (int j = 0; j < width; j++)
-		{
-			sumx = 0;
-			sumy = 0;
+	// Get all the peaks and store them in vector
+	HashMap *peaks = new HashMap();
+	vector<Point*> v = peak_detection(mag, peaks, x, y);
 
-			// This is the convolution
-			for (int p = -cent; p <= cent; p++)
-			{
-				for (int q = -cent; q <= cent; q++)
-				{
-					if ((i + p) < 0 || (j + q) < 0 || (i + p) >= height || (j + q) >= width)
-						continue;
-					
-					sumx += pic[i+p][j+q] * maskx[p+cent][q+cent];
-					sumy += pic[i+p][j+q] * masky[p+cent][q+cent];
-				}
-			}
-			
-			if (sumx > maxx)
-				maxx = sumx;
-			if (sumy > maxy)
-				maxy = sumy;
-
-			// Store convolution result in respective matrix
-			x[i][j] = sumx;
-			y[i][j] = sumy;
-		}
-	}
-
-	// Make sure all the convolution values are between 0-255
-	for (int i = 0; i < height; i++)
+	// Go through the vector and call the recursive function and each point. If the value
+	// in the mag matrix is hi, then immediately accept it in final. If lo, then immediately
+	// reject. If between lo and hi, then check if it's next to a hi pixel using recursion
+	HashMap *h = new HashMap();
+	int a, b;
+	for (int i = 0; i < v.size(); i++)
 	{
-		for (int j = 0; j < width; j++)
-		{
-			x[i][j] = x[i][j] / maxx * 255;
-			y[i][j] = y[i][j] / maxy * 255;
-		}		
+		a = v.at(i)->x;
+		b = v.at(i)->y;
+
+		if (mag[a][b] >= hi)
+			final[a][b] = 255;
+		else if (mag[a][b] < lo)
+			final[a][b] = 0;
+		else
+			recursiveDT(mag, final, h, peaks, a, b, 0);
 	}
 
-	// Find magnitude and maxVal, then store it in the 'mag' matrix
-	double mags;
-	double maxVal = 0;
-	for (int i = 0; i < height; i++)
-	{
-		for(int j = 0; j < width; j++)
-		{
-			mags = sqrt((x[i][j] * x[i][j]) + (y[i][j] * y[i][j]));
-
-			if (mags > maxVal)
-				maxVal = mags;
-
-			mag[i][j] = mags;
-		}
-	}
-
-	// Make sure all the magnitude values are between 0-255
-	for (int i = 0; i < height; i++)
-		for (int j = 0; j < width; j++)
-			mag[i][j] = mag[i][j] / maxVal * 255;
-
+	// ================================= IMAGE OUTPUT =================================
 	// Outputting the 'mag' matrix to img1. It's very important to cast it to a char.
-	// Also to make sure that the decimal doesn't produce any wonky results, cast to
-	// an int first
+	// To make sure that the decimal doesn't produce any wonky results, cast to an int
+	// ================================= IMAGE OUTPUT =================================
 	for (int i = 0; i < height; i++)
 		for (int j = 0; j < width; j++)
 			img1 << (char)((int)mag[i][j]);
 
-	// ================================ Peaks Detection ================================
-	double slope = 0;
-	for (int i = 1; i < height - 1; i++)
+	// Outputting the points stored in the vector to img2
+	int k = 0;
+	for (int i = 0; i < v.size(); i++)
 	{
-		for (int j = 1; j < width - 1; j++)
-		{
-			// To avoid dividing by zero
-			if (x[i][j] == 0)
-				x[i][j] = 0.0001;
+		while(k++ != (v.at(i)->x * height + v.at(i)->y - 1))
+			img2 << (char)(0);
 
-			slope = y[i][j] / x[i][j];
-
-			// We're only looking for the peaks. If we're at a peak, store 255 in 'peaks'
-			if (slope <= tan(22.5) && slope > tan(-22.5))
-			{
-				if (mag[i][j] > mag[i][j-1] && mag[i][j] > mag[i][j+1])
-					peaks[i][j] = 255;
-			}
-			else if (slope <= tan(67.5) && slope > tan(22.5))
-			{
-				if (mag[i][j] > mag[i-1][j-1] && mag[i][j] > mag[i+1][j+1])
-					peaks[i][j] = 255;
-			}
-			else if (slope <= tan(-22.5) && slope > tan(-67.5))
-			{
-				if (mag[i][j] > mag[i+1][j-1] && mag[i][j] > mag[i-1][j+1])
-					peaks[i][j] = 255;
-			}
-			else
-			{
-				if (mag[i][j] > mag[i-1][j] && mag[i][j] > mag[i+1][j])
-					peaks[i][j] = 255;
-			}
-		}
+		img2 << (char)(255);
 	}
 
-	// Outputting the 'peaks' matrix to img2
-	for (int i = 0; i < height; i++)
-		for (int j = 0; j < width; j++)
-			img2 << (char)((int)peaks[i][j]);
-
-	// ======================== Hysteresis & Double Thresholding ========================
-	// To get rid of all the garbage 'snow' in the peaks image, we'll first look at
-	// the peaks matrix. If it's a 255 then look back at the 'mag' matrix. If mag is hi,
-	// then automatically store in the final. If lo, then reject. We'll deal with the
-	// middle values after this
-	// The HashMap will help us keep track of pixels we've already visited to avoid in-
-	// finite recusion.
-	for (int i = 0; i < height; i++)
-	{
-		for (int j = 0; j < width; j++)
-		{
-			if (peaks[i][j] == 255)
-			{
-				if (mag[i][j] >= hi)
-					recursiveDT(mag, final, i, j);
-				else if (mag[i][j] < lo)
-					final[i][j] = 0;
-			}
-		}
-	}
-	/*
-	// I'm honestly not 100% certain what's happening here. This is bascially
-	// copied from "cannyparts3and4online1b.pptx" on the course website 
-	int flag = 1;
-	while (flag == 1)
-	{
-		flag = 0;
-		for (int i = 0; i < height; i++)
-		{
-			for (int j = 0; j < width; j++)
-			{
-				if (peaks[i][j] == 255)
-				{
-					for (int p = -1; p <= 1; p++)
-					{
-						for (int q = -1; q <= 1; q++)
-						{
-							if (final[i+p][j+q] == 255)
-							{
-								peaks[i][j] = 0;
-								final[i][j] = 255;
-								flag = 1;
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-*/
 	// Output the 'final' matrix to img1
 	for (int i = 0; i < height; i++)
 		for (int j = 0; j < width; j++)
