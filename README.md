@@ -6,6 +6,7 @@ Using the program is fairly simple. Start by downloading or cloning the repo. I 
 
 Once you have your copy of the program, open the program's directory in a Linux terminal and then type "make", that will do all the necessary compilation and produce the "canny.out" executable file.
 
-Last, type the command "./canny.out <name_of_input_image> <high_threshold> <sigman_value>" in your Linux terminal (make sure to not include the angle brackets).
+Last, type the command "./canny.out <name_of_input_image> <high_threshold> <sigma_value>" in your Linux terminal (make sure to not include the angle brackets). A typical value to use as your <high_threshold> would be ~100, and a typical value for <sigma> would be 1.
+
 
 The program will do it's magic. Your output image will be in the "output_images" folder.
