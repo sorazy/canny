@@ -1,5 +1,5 @@
-#include "canny.hpp"
-#include "global.hpp"
+#include "header_files/canny.hpp"
+#include "header_files/global.hpp"
 
 using namespace std;
 

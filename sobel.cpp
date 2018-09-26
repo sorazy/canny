@@ -3,6 +3,8 @@
 // ========================================================
 // ASSIGNMENT #1.1: S O B E L   E D G E   D E T E C T I O N
 // ========================================================
+// A very simple Sobel edge detection program as a warm up
+// for canny
 
 #include <cmath>
 #include <fstream>

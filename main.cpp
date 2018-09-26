@@ -4,9 +4,9 @@
 // ASSIGNMENT #1.2: C A N N Y   E D G E   D E T E C T I O N
 // ========================================================
 
-#include "canny.hpp"
-#include "global.hpp"
-#include "HashMap.hpp"
+#include "header_files/canny.hpp"
+#include "header_files/global.hpp"
+#include "header_files/HashMap.hpp"
 
 using namespace std;
 

@@ -1,5 +1,5 @@
-#include "global.hpp"
-#include "HashMap.hpp"
+#include "header_files/global.hpp"
+#include "header_files/HashMap.hpp"
 
 using namespace std;
 
