@@ -44,12 +44,12 @@ int main(int argc, char **argv)
 	int sumx, sumy;
 
 	// Storing header information and copying into the new ouput images
-	infile >> buffer >> width >> height >> intensity;
+	infile  >> buffer >> width >> height >> intensity;
 	img_mag << buffer << endl << width << " " << height << endl << intensity << endl;
-	img_hi << buffer << endl << width << " " << height << endl << intensity << endl;
-	img_lo << buffer << endl << width << " " << height << endl << intensity << endl;
-	img_x  << buffer << endl << width << " " << height << endl << intensity << endl;
-	img_y  << buffer << endl << width << " " << height << endl << intensity << endl;
+	img_hi  << buffer << endl << width << " " << height << endl << intensity << endl;
+	img_lo  << buffer << endl << width << " " << height << endl << intensity << endl;
+	img_x   << buffer << endl << width << " " << height << endl << intensity << endl;
+	img_y   << buffer << endl << width << " " << height << endl << intensity << endl;
 
 	// These matrices will hold the integer values of the input image
 	double pic[height][width], x[height][width], y[height][width], mag[height][width];
