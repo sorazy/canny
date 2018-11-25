@@ -23,16 +23,21 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	ifstream infile(argv[1], ios::binary);
+	// Exit program if file doesn't open
+	string filename(argv[1]);
+	string path = "./input_images/" + filename;
+	ifstream infile(path, ios::binary);
 	if (!infile.is_open())
 	{
-		cout << "File " << argv[1] << " not found." << endl;
+		cout << "File " << path << " not found in directory." << endl;
 		return 0;
-	}
+	}	
 
 	ofstream img_mag("./output_images/sobel_mag.pgm", ios::binary);
 	ofstream img_hi("./output_images/sobel_hi.pgm", ios::binary);
 	ofstream img_lo("./output_images/sobel_lo.pgm", ios::binary);
+	ofstream img_x("./output_images/sobel_x.pgm", ios::binary);
+	ofstream img_y("./output_images/sobel_y.pgm", ios::binary);
 
 	char buffer[1024];
 	int width, height, intensity, hi = stoi(argv[2]), lo = stoi(argv[3]);
@@ -43,6 +48,8 @@ int main(int argc, char **argv)
 	img_mag << buffer << endl << width << " " << height << endl << intensity << endl;
 	img_hi << buffer << endl << width << " " << height << endl << intensity << endl;
 	img_lo << buffer << endl << width << " " << height << endl << intensity << endl;
+	img_x  << buffer << endl << width << " " << height << endl << intensity << endl;
+	img_y  << buffer << endl << width << " " << height << endl << intensity << endl;
 
 	// These matrices will hold the integer values of the input image
 	double pic[height][width], x[height][width], y[height][width], mag[height][width];
@@ -121,18 +128,24 @@ int main(int argc, char **argv)
 	{
 		for (int j = 0; j < width; j++)
 		{
-			// Output the magniture image
+			// Output the x image
+			img_x << (char)((int)x[i][j]);
+
+			// Output the y image
+			img_y << (char)((int)y[i][j]);
+
+			// Output the magnitude image
 			img_mag << (char)((int)mag[i][j]);
 
-			// Ouput the low threshold
+			// Ouput the low threshold image
 			if (mag[i][j] > lo)
-				img_lo << (char)((int)mag[i][j]);
+				img_lo << (char)255;
 			else
 				img_lo << (char)0;
 
-			// Ouput the low threshold
+			// Ouput the high threshold image
 			if (mag[i][j] > hi)
-				img_hi << (char)((int)mag[i][j]);
+				img_hi << (char)255;
 			else
 				img_hi << (char)0;
 		}
