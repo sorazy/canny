@@ -7,7 +7,7 @@ canny.o: canny.cpp
 HashMap.o: HashMap.cpp
 	g++ -c HashMap.cpp
 clean:
-	rm -f *.o *.out
+	rm -f *.o *.out output_images/*.pgm
 sobel: sobel.o
 	g++ -o sobel.out sobel.o
 sobel.o: sobel.cpp
